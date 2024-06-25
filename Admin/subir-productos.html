@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subir Productos</title>
+    <!-- Incluir Firebase JavaScript SDK (compatible) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #7B68EE, #9F79EE);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        select {
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #27ae60;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #1e8449;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Subir Producto</h1>
+        <form id="productForm">
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" required>
+
+            <label for="precio">Precio:</label>
+            <input type="text" id="precio" required>
+
+            <label for="codigo">Código:</label>
+            <input type="text" id="codigo" required>
+
+            <label for="imagen">Imagen (URL):</label>
+            <input type="text" id="imagen" required>
+
+            <label for="categoria">Categoría:</label>
+            <select id="categoria" required>
+                <option value="Accesorios">Accesorios</option>
+                <option value="Lencería">Lencería</option>
+                <option value="Perfumes">Perfumes</option>
+                <option value="Aretes">Aretes</option>
+                <option value="Ternos de Baño">Ternos de Baño</option>
+                <option value="Ropa de Niño">Ropa de Niño</option>
+                <option value="Ropa de Mujer">Ropa de Mujer</option>
+                <option value="Higiene Personal">Higiene Personal</option>
+            </select>
+
+            <label for="talla">Talla del Producto (opcional):</label>
+            <input type="text" id="talla">
+
+            <button type="submit">Agregar Producto</button>
+        </form>
+    </div>
+
+    <script>
+        // Initialize Firebase with your project's config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3V_TZC8o-kpH52pxlRYYf7REDX5tnVxM",
+            authDomain: "norma-ventas.firebaseapp.com",
+            projectId: "norma-ventas",
+            storageBucket: "norma-ventas.appspot.com",
+            messagingSenderId: "629514994178",
+            appId: "1:629514994178:web:8d4aa2200054f754a45d1b",
+            measurementId: "G-WHDY8B3HVE",
+            databaseURL: "https://norma-ventas-default-rtdb.firebaseio.com/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        const db = firebase.database();
+
+        // Referencia a la colección de productos en Firebase
+        const productosRef = db.ref('productos');
+
+        // Manejar el envío del formulario
+        document.getElementById('productForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const nombre = document.getElementById('nombre').value;
+            const precio = document.getElementById('precio').value;
+            const codigo = document.getElementById('codigo').value;
+            const imagen = document.getElementById('imagen').value;
+            const categoria = document.getElementById('categoria').value;
+            const talla = document.getElementById('talla').value || null; // Obtener talla o establecer como null
+
+            const nuevoProducto = {
+                nombre,
+                precio,
+                codigo,
+                imagen,
+                categoria,
+                talla
+            };
+
+            // Subir el nuevo producto a Firebase
+            productosRef.push(nuevoProducto, function(error) {
+                if (error) {
+                    alert('Error al agregar el producto: ' + error.message);
+                } else {
+                    alert('Producto agregado exitosamente');
+                    document.getElementById('productForm').reset();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

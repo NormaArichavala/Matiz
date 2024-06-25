@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Productos</title>
+    <!-- Incluir Firebase JavaScript SDK (compatible) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, black, black);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        .search-bar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input[type="text"] {
+            padding: 8px;
+            width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+
+        .seccion {
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .seccion h2 {
+            color: #27ae60; /* Color verde para el título de la sección */
+            border-bottom: 2px solid #27ae60; /* Línea decorativa */
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        .ver-mas {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            padding: 8px 12px;
+            background-color: #27ae60;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .ver-mas:hover {
+            background-color: #1e8449; /* Cambio de color al pasar el mouse */
+        }
+
+        .productos-container {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
+
+        .producto {
+            flex: 0 0 auto;
+            width: 200px;
+            background: #fff;
+            border: 1px solid #ddd;
+            margin: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            text-align: center;
+        }
+
+        .producto:hover {
+            transform: translateY(-5px);
+        }
+
+        .producto img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .producto p {
+            margin: 8px 0;
+        }
+
+        .precio {
+            font-size: 18px;
+            font-weight: bold;
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Catálogo de Productos</h1>
+        
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Buscar producto por nombre o código...">
+        </div>
+
+        <div class="seccion" id="accesorios">
+            <h2>Accesorios</h2>
+            <button class="ver-mas" onclick="verMas('accesorios.html')">Ver más</button>
+            <div class="productos-container" id="productosAccesorios">
+                <!-- Aquí se insertarán los productos de la categoría "Accesorios" desde Firebase -->
+            </div>
+        </div>
+
+        <div class="seccion" id="lenceria">
+            <h2>Lencería</h2>
+            <button class="ver-mas" onclick="verMas('lenceria.html')">Ver más</button>
+            <div class="productos-container" id="productosLenceria">
+                <!-- Aquí se insertarán los productos de la categoría "Lencería" desde Firebase -->
+            </div>
+        </div>
+
+        <div class="seccion" id="perfumes">
+            <h2>Perfumes</h2>
+            <button class="ver-mas" onclick="verMas('perfumes.html')">Ver más</button>
+            <div class="productos-container" id="productosPerfumes">
+                <!-- Aquí se insertarán los productos de la categoría "Perfumes" desde Firebase -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Función para redirigir al hacer clic en el botón "Ver más"
+        function verMas(url) {
+            window.location.href = url;
+        }
+
+        // Initialize Firebase with your project's config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3V_TZC8o-kpH52pxlRYYf7REDX5tnVxM",
+            authDomain: "norma-ventas.firebaseapp.com",
+            projectId: "norma-ventas",
+            storageBucket: "norma-ventas.appspot.com",
+            messagingSenderId: "629514994178",
+            appId: "1:629514994178:web:8d4aa2200054f754a45d1b",
+            measurementId: "G-WHDY8B3HVE",
+            databaseURL: "https://norma-ventas-default-rtdb.firebaseio.com/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        const db = firebase.database();
+
+        // Obtener referencia a los productos
+        const productosRef = db.ref('productos');
+
+        // Escuchar cambios en los productos
+        productosRef.on('value', (snapshot) => {
+            const productos = snapshot.val();
+
+            // Filtrar y agrupar productos por categoría
+            const accesorios = [];
+            const lenceria = [];
+            const perfumes = [];
+
+            for (let key in productos) {
+                if (productos.hasOwnProperty(key)) {
+                    const producto = productos[key];
+                    producto.key = key; // Guardar la clave del producto para referencias futuras
+
+                    // Agrupar productos según su categoría
+                    switch (producto.categoria) {
+                        case 'Accesorios':
+                            accesorios.push(producto);
+                            break;
+                        case 'Lencería':
+                            lenceria.push(producto);
+                            break;
+                        case 'Perfumes':
+                            perfumes.push(producto);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            // Mostrar productos en cada sección
+            mostrarProductos(mezclarYLimitar(accesorios), 'productosAccesorios');
+            mostrarProductos(mezclarYLimitar(lenceria), 'productosLenceria');
+            mostrarProductos(mezclarYLimitar(perfumes), 'productosPerfumes');
+
+            // Activar búsqueda al escribir en el input de búsqueda
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const term = this.value.toLowerCase();
+                const filteredAccesorios = accesorios.filter(producto =>
+                    producto.nombre.toLowerCase().includes(term) || producto.codigo.toLowerCase().includes(term)
+                );
+                const filteredLenceria = lenceria.filter(producto =>
+                    producto.nombre.toLowerCase().includes(term) || producto.codigo.toLowerCase().includes(term)
+                );
+                const filteredPerfumes = perfumes.filter(producto =>
+                    producto.nombre.toLowerCase().includes(term) || producto.codigo.toLowerCase().includes(term)
+                );
+
+                mostrarProductos(mezclarYLimitar(filteredAccesorios), 'productosAccesorios');
+                mostrarProductos(mezclarYLimitar(filteredLenceria), 'productosLenceria');
+                mostrarProductos(mezclarYLimitar(filteredPerfumes), 'productosPerfumes');
+            });
+        });
+
+        // Función para mezclar productos y limitar a 5
+        function mezclarYLimitar(array) {
+            return array.sort(() => 0.5 - Math.random()).slice(0, 5);
+        }
+
+        // Función para mostrar productos en una sección específica
+        function mostrarProductos(productos, containerId) {
+            const productosContainer = document.getElementById(containerId);
+
+            // Limpiar contenedor antes de agregar nuevos productos
+            productosContainer.innerHTML = '';
+
+            // Iterar sobre cada producto y mostrarlo en pantalla
+            productos.forEach(producto => {
+                const productoHTML = `
+                    <div class="producto">
+                        <img src="${producto.imagen}" alt="Imagen del producto">
+                        <p><strong>Nombre:</strong> ${producto.nombre}</p>
+                        <p class="precio">$ ${producto.precio}</p>
+                        <p><strong>Código:</strong> ${producto.codigo}</p>
+                    </div>
+                `;
+                productosContainer.innerHTML += productoHTML;
+            });
+        }
+    </script>
+</body>
+</html>

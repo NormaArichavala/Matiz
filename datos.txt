@@ -1,0 +1,91 @@
+Panel de Admin.html
+	Menu
+	- Administrar Productos
+		- Agregar Productos
+			- Imagen
+			- Stock
+			- Precios
+			- Codigos
+
+	- Registrar Vendedores.html
+		- correo electronico
+		- contraseña
+
+	- Administrar Pedidos.html
+
+Catalogo.html
+	- Barra de busqueda por nombre o codigo
+
+	- Productos
+		- Imagen
+		- Nombre
+		- Codigo
+		- Precio
+
+Login Vendedores
+	- correo
+	- contraseña
+	- boton iniciar sesion (lleva el Panel Venedores.html)
+
+Panel Vendedores.html
+	Recivo o Facturacion
+		- Cliente.html
+			- Cedula de cliente
+			- correo electronico (opcional)
+			- telefono - WhatsApp
+		
+		- Sistema de Pedidos.html
+			- codigo de producto
+				- boton de agregar producto a lista
+			- lista de productos agregados
+				- boton para eliminar producto de la lista
+			- informacion del pedido
+				- total de productos a pedir
+				- Precio total
+				- Boton de Realizar Pedido 
+					- Confirmar Pedido Si o No
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Conectar con FireBase
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+            apiKey: "AIzaSyD3V_TZC8o-kpH52pxlRYYf7REDX5tnVxM",
+            authDomain: "norma-ventas.firebaseapp.com",
+            projectId: "norma-ventas",
+            storageBucket: "norma-ventas.appspot.com",
+            messagingSenderId: "629514994178",
+            appId: "1:629514994178:web:8d4aa2200054f754a45d1b",
+            measurementId: "G-WHDY8B3HVE",
+            databaseURL: "https://norma-ventas-default-rtdb.firebaseio.com/"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);

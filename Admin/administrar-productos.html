@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar Productos</title>
+    <!-- Incluir Firebase JavaScript SDK (compatible) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, #7B68EE, #9F79EE);
+            margin: 0;
+            padding: 0;
+            color: #fff;
+        }
+
+        .container {
+            width: 90%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .search-bar input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .product {
+            background: #fff;
+            color: #333;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .product img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .product .price {
+            color: green;
+            font-weight: bold;
+        }
+
+        .delete-btn {
+            padding: 10px 20px;
+            background-color: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Administrar Productos</h1>
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Buscar productos...">
+        </div>
+        <div id="product-list"></div>
+    </div>
+
+    <script>
+        // Initialize Firebase with your project's config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3V_TZC8o-kpH52pxlRYYf7REDX5tnVxM",
+            authDomain: "norma-ventas.firebaseapp.com",
+            projectId: "norma-ventas",
+            storageBucket: "norma-ventas.appspot.com",
+            messagingSenderId: "629514994178",
+            appId: "1:629514994178:web:8d4aa2200054f754a45d1b",
+            measurementId: "G-WHDY8B3HVE",
+            databaseURL: "https://norma-ventas-default-rtdb.firebaseio.com/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        const db = firebase.database();
+
+        // Referencia a la colección de productos en Firebase
+        const productosRef = db.ref('productos');
+
+        function renderProductos() {
+            const productList = document.getElementById('product-list');
+            productosRef.on('value', (snapshot) => {
+                productList.innerHTML = '';
+                snapshot.forEach(childSnapshot => {
+                    const producto = childSnapshot.val();
+                    const productDiv = document.createElement('div');
+                    productDiv.className = 'product';
+                    productDiv.innerHTML = `
+                        <img src="${producto.imagen}" alt="${producto.nombre}">
+                        <h3>${producto.nombre}</h3>
+                        <p>${producto.codigo}</p>
+                        <p class="price">$${producto.precio}</p>
+                        ${producto.talla ? `<p>Talla: ${producto.talla}</p>` : ''}
+                        <button class="delete-btn" onclick="deleteProduct('${childSnapshot.key}')">Eliminar</button>
+                    `;
+                    productList.appendChild(productDiv);
+                });
+            });
+        }
+
+        function deleteProduct(productId) {
+            if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+                productosRef.child(productId).remove()
+                    .then(() => {
+                        alert('Producto eliminado exitosamente.');
+                        renderProductos();
+                    })
+                    .catch(error => {
+                        console.error('Error al eliminar el producto:', error);
+                    });
+            }
+        }
+
+        document.getElementById('search').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            document.querySelectorAll('.product').forEach(product => {
+                const nombre = product.querySelector('h3').textContent.toLowerCase();
+                const codigo = product.querySelector('p').textContent.toLowerCase();
+                if (nombre.includes(searchTerm) || codigo.includes(searchTerm)) {
+                    product.style.display = 'block';
+                } else {
+                    product.style.display = 'none';
+                }
+            });
+        });
+
+        renderProductos();
+    </script>
+</body>
+</html>

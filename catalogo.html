@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Productos</title>
+    <!-- Incluir Firebase JavaScript SDK (compatible) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom right, black, black);
+            margin: 0;
+            padding: 0;
+            color: #fff;
+        }
+
+        .container {
+            width: 90%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .product-container {
+            display: flex;
+            overflow-x: auto;
+        }
+
+        .product {
+            background: #fff;
+            color: #333;
+            border-radius: 8px;
+            margin-right: 10px;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+            flex: 0 0 auto;
+            width: 200px;
+        }
+
+        .product img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .product .price {
+            color: green;
+            font-weight: bold;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .search-bar input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .view-more-btn {
+            padding: 10px 20px;
+            background-color: #27ae60;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+        }
+
+        .view-more-btn:hover {
+            background-color: #1e8449;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Catálogo de Productos</h1>
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Buscar productos...">
+        </div>
+
+        <div class="section" id="accesorios-section">
+            <h2>Accesorios<a href="accesorios.html" class="view-more-btn">Ver más</a></h2>
+            <div class="product-container" id="accesorios"></div>
+        </div>
+        <div class="section" id="lenceria-section">
+            <h2>Lencería<a href="lenceria.html" class="view-more-btn">Ver más</a></h2>
+            <div class="product-container" id="lenceria"></div>
+        </div>
+        <div class="section" id="perfumes-section">
+            <h2>Perfumes<a href="perfumes.html" class="view-more-btn">Ver más</a></h2>
+            <div class="product-container" id="perfumes"></div>
+        </div>
+        <div class="section" id="aretes-section">
+            <h2>Aretes<a href="aretes.html" class="view-more-btn">Ver más</a></h2>
+            <div class="product-container" id="aretes"></div>
+        </div>
+        <div class="section" id="ternos-de-bano-section">
+            <h2>Ternos de Baño<a href="ternos-de-bano.html" class="view-more-btn">Ver más</a></h2>
+            <div class="product-container" id="ternos-de-bano"></div>
+        </div>
+        <div class="section" id="ropa-de-nino-section">
+            <h2>Ropa de Niño<a href="ropa-de-nino.html" class="view-more-btn">Ver más</a></h2>
+            <div class="product-container" id="ropa-de-nino"></div>
+        </div>
+        <div class="section" id="ropa-de-mujer-section">
+            <h2>Ropa de Mujer<a href="ropa-de-mujer.html" class="view-more-btn">Ver más</a></h2>
+            <div class="product-container" id="ropa-de-mujer"></div>
+        </div>
+        <div class="section" id="higiene-personal-section">
+            <h2>Higiene Personal<a href="higiene-personal.html" class="view-more-btn">Ver más</a></h2>
+            <div class="product-container" id="higiene-personal"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase with your project's config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3V_TZC8o-kpH52pxlRYYf7REDX5tnVxM",
+            authDomain: "norma-ventas.firebaseapp.com",
+            projectId: "norma-ventas",
+            storageBucket: "norma-ventas.appspot.com",
+            messagingSenderId: "629514994178",
+            appId: "1:629514994178:web:8d4aa2200054f754a45d1b",
+            measurementId: "G-WHDY8B3HVE",
+            databaseURL: "https://norma-ventas-default-rtdb.firebaseio.com/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        const db = firebase.database();
+
+        // Referencia a la colección de productos en Firebase
+        const productosRef = db.ref('productos');
+
+        function renderProductos(categoria, containerId) {
+            const container = document.getElementById(containerId);
+            productosRef.orderByChild('categoria').equalTo(categoria).limitToLast(5).on('value', (snapshot) => {
+                container.innerHTML = '';
+                const productos = [];
+                snapshot.forEach(childSnapshot => {
+                    productos.push(childSnapshot.val());
+                });
+
+                productos.sort(() => 0.5 - Math.random()).slice(0, 5).forEach(producto => {
+                    const productDiv = document.createElement('div');
+                    productDiv.className = 'product';
+                    productDiv.innerHTML = `
+                        <img src="${producto.imagen}" alt="${producto.nombre}">
+                        <h3>${producto.nombre}</h3>
+                        <p>${producto.codigo}</p>
+                        <p class="price">$${producto.precio}</p>
+                        ${producto.talla ? `<p>Talla: ${producto.talla}</p>` : ''}
+                    `;
+                    container.appendChild(productDiv);
+                });
+            });
+        }
+
+        renderProductos('Accesorios', 'accesorios');
+        renderProductos('Lencería', 'lenceria');
+        renderProductos('Perfumes', 'perfumes');
+        renderProductos('Aretes', 'aretes');
+        renderProductos('Ternos de Baño', 'ternos-de-bano');
+        renderProductos('Ropa de Niño', 'ropa-de-nino');
+        renderProductos('Ropa de Mujer', 'ropa-de-mujer');
+        renderProductos('Higiene Personal', 'higiene-personal');
+
+        // Función de búsqueda
+        document.getElementById('search').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            document.querySelectorAll('.product').forEach(product => {
+                const nombre = product.querySelector('h3').textContent.toLowerCase();
+                const codigo = product.querySelector('p').textContent.toLowerCase();
+                if (nombre.includes(searchTerm) || codigo.includes(searchTerm)) {
+                    product.style.display = 'block';
+                } else {
+                    product.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
