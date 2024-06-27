@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Clientes</title>
+    <!-- Incluir Firebase JavaScript SDK (compatible) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .titulo {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        form label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        form input {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        form button {
+            padding: 10px;
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        form button:hover {
+            background-color: #2980b9;
+        }
+
+        .client-list {
+            width: 100%;
+        }
+
+        .client {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .client:last-child {
+            border-bottom: none;
+        }
+
+        .client-details {
+            flex-grow: 1;
+        }
+
+        .client-details p {
+            margin: 0;
+        }
+
+        .client-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .client-actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .edit-btn {
+            background-color: #f1c40f;
+            color: #fff;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: #fff;
+        }
+
+        .edit-btn:hover {
+            background-color: #d4ac0d;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="titulo">Crear Cliente</h2>
+        <form id="create-client-form">
+            <label for="nombres">Nombres Completos</label>
+            <input type="text" id="nombres" required>
+
+            <label for="cedula">Número de Cédula</label>
+            <input type="text" id="cedula" required>
+
+            <label for="telefono">Número de Teléfono</label>
+            <input type="text" id="telefono" required>
+
+            <label for="direccion">Dirección</label>
+            <input type="text" id="direccion" required>
+
+            <label for="ciudad">Ciudad</label>
+            <input type="text" id="ciudad" required>
+
+            <label for="correo">Correo Electrónico (Opcional)</label>
+            <input type="email" id="correo">
+
+            <button type="submit">Crear Cliente</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h2 class="titulo">Administrar Clientes</h2>
+        <div id="client-list" class="client-list">
+            <!-- Lista de clientes -->
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase with your project's config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3V_TZC8o-kpH52pxlRYYf7REDX5tnVxM",
+            authDomain: "norma-ventas.firebaseapp.com",
+            projectId: "norma-ventas",
+            storageBucket: "norma-ventas.appspot.com",
+            messagingSenderId: "629514994178",
+            appId: "1:629514994178:web:8d4aa2200054f754a45d1b",
+            measurementId: "G-WHDY8B3HVE",
+            databaseURL: "https://norma-ventas-default-rtdb.firebaseio.com/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const clientesRef = db.ref('clientes');
+
+        // Crear Cliente
+        const createClientForm = document.getElementById('create-client-form');
+        createClientForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const nuevoCliente = {
+                nombres: document.getElementById('nombres').value,
+                cedula: document.getElementById('cedula').value,
+                telefono: document.getElementById('telefono').value,
+                direccion: document.getElementById('direccion').value,
+                ciudad: document.getElementById('ciudad').value,
+                correo: document.getElementById('correo').value || 'N/A'
+            };
+
+            clientesRef.push(nuevoCliente)
+                .then(() => {
+                    alert('Cliente creado exitosamente.');
+                    createClientForm.reset();
+                    renderClientes();
+                })
+                .catch(error => {
+                    console.error('Error al crear el cliente:', error);
+                });
+        });
+
+        // Renderizar Clientes
+        function renderClientes() {
+            const clientList = document.getElementById('client-list');
+            clientList.innerHTML = '';
+            clientesRef.on('value', (snapshot) => {
+                snapshot.forEach(childSnapshot => {
+                    const cliente = childSnapshot.val();
+                    const clienteKey = childSnapshot.key;
+                    const clientDiv = document.createElement('div');
+                    clientDiv.className = 'client';
+                    clientDiv.innerHTML = `
+                        <div class="client-details">
+                            <p><strong>Nombres:</strong> ${cliente.nombres}</p>
+                            <p><strong>Cédula:</strong> ${cliente.cedula}</p>
+                            <p><strong>Teléfono:</strong> ${cliente.telefono}</p>
+                            <p><strong>Dirección:</strong> ${cliente.direccion}</p>
+                            <p><strong>Ciudad:</strong> ${cliente.ciudad}</p>
+                            <p><strong>Correo:</strong> ${cliente.correo}</p>
+                        </div>
+                        <div class="client-actions">
+                            <button class="edit-btn" onclick="editCliente('${clienteKey}')">Editar</button>
+                            <button class="delete-btn" onclick="deleteCliente('${clienteKey}')">Eliminar</button>
+                        </div>
+                    `;
+                    clientList.appendChild(clientDiv);
+                });
+            });
+        }
+
+        // Eliminar Cliente
+        function deleteCliente(clienteId) {
+            if (confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
+                clientesRef.child(clienteId).remove()
+                    .then(() => {
+                        alert('Cliente eliminado exitosamente.');
+                        renderClientes();
+                    })
+                    .catch(error => {
+                        console.error('Error al eliminar el cliente:', error);
+                    });
+            }
+        }
+
+        // Editar Cliente
+        function editCliente(clienteId) {
+            const cliente = prompt('Ingrese los nuevos datos del cliente (nombres, cedula, telefono, direccion, ciudad, correo) separados por coma:');
+            if (cliente) {
+                const [nombres, cedula, telefono, direccion, ciudad, correo] = cliente.split(',');
+
+                clientesRef.child(clienteId).update({
+                    nombres: nombres.trim(),
+                    cedula: cedula.trim(),
+                    telefono: telefono.trim(),
+                    direccion: direccion.trim(),
+                    ciudad: ciudad.trim(),
+                    correo: correo.trim() || 'N/A'
+                })
+                .then(() => {
+                    alert('Cliente actualizado exitosamente.');
+                    renderClientes();
+                })
+                .catch(error => {
+                    console.error('Error al actualizar el cliente:', error);
+                });
+            }
+        }
+
+        // Inicializar la lista de clientes al cargar la página
+        renderClientes();
+    </script>
+</body>
+</html>

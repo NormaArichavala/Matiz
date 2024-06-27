@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota de Venta</title>
+    <!-- Incluir Firebase JavaScript SDK (compatible) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .nota-venta {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .titulo {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .search-bar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .client-list, .product-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .client, .product {
+            background: #fff;
+            color: #333;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .client img, .product img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+
+        .client .details, .product .details {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .client .details p, .product .price {
+            color: green;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .total {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .total span {
+            font-size: 20px;
+            color: #27ae60;
+        }
+
+        .print-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .print-btn:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nota-venta" id="nota-venta">
+            <h2 class="titulo">Nota de Venta</h2>
+            <div class="search-bar">
+                <input type="text" id="search-client" placeholder="Buscar cliente...">
+            </div>
+            <ul class="client-list" id="client-list">
+                <!-- Los clientes buscados aparecerán aquí -->
+            </ul>
+            <div id="selected-client" style="display: none;">
+                <h3>Cliente Seleccionado:</h3>
+                <p id="client-details"></p>
+            </div>
+            <table id="nota-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Código del Producto</th>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario</th>
+                        <th>Total</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="nota-items">
+                    <!-- Los productos seleccionados aparecerán aquí -->
+                </tbody>
+            </table>
+            <div class="total">
+                Total a Pagar: <span id="total-amount">$0.00</span>
+            </div>
+            <button class="print-btn" onclick="printNota()">Imprimir Comprobante</button>
+        </div>
+        
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Buscar productos...">
+        </div>
+        <ul class="product-list" id="product-list">
+            <!-- Los productos buscados aparecerán aquí -->
+        </ul>
+    </div>
+
+    <script>
+        // Initialize Firebase with your project's config
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3V_TZC8o-kpH52pxlRYYf7REDX5tnVxM",
+            authDomain: "norma-ventas.firebaseapp.com",
+            projectId: "norma-ventas",
+            storageBucket: "norma-ventas.appspot.com",
+            messagingSenderId: "629514994178",
+            appId: "1:629514994178:web:8d4aa2200054f754a45d1b",
+            measurementId: "G-WHDY8B3HVE",
+            databaseURL: "https://norma-ventas-default-rtdb.firebaseio.com/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        const db = firebase.database();
+        const productosRef = db.ref('productos');
+        const clientesRef = db.ref('clientes');
+
+        const searchInput = document.getElementById('search');
+        const searchClientInput = document.getElementById('search-client');
+        const productList = document.getElementById('product-list');
+        const clientList = document.getElementById('client-list');
+        const notaItems = document.getElementById('nota-items');
+        const totalAmount = document.getElementById('total-amount');
+        const selectedClientDiv = document.getElementById('selected-client');
+        const clientDetails = document.getElementById('client-details');
+        const notaTable = document.getElementById('nota-table');
+
+        let total = 0;
+        let selectedClient = null;
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            productList.innerHTML = '';
+
+            if (searchTerm === '') {
+                return; // No mostrar productos si no hay búsqueda
+            }
+
+            productosRef.on('value', (snapshot) => {
+                snapshot.forEach(childSnapshot => {
+                    const producto = childSnapshot.val();
+                    const nombre = producto.nombre.toLowerCase();
+                    const codigo = producto.codigo.toLowerCase();
+
+                    if (nombre.includes(searchTerm) || codigo.includes(searchTerm)) {
+                        const productDiv = document.createElement('li');
+                        productDiv.className = 'product';
+                        productDiv.innerHTML = `
+                            <img src="${producto.imagen}" alt="${producto.nombre}">
+                            <div class="details">
+                                <h3>${producto.nombre}</h3>
+                                <p class="price">$${producto.precio}</p>
+                            </div>
+                        `;
+                        productDiv.addEventListener('click', () => addToNota(producto));
+                        productList.appendChild(productDiv);
+                    }
+                });
+            });
+        });
+
+        searchClientInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            clientList.innerHTML = '';
+
+            if (searchTerm === '') {
+                return; // No mostrar clientes si no hay búsqueda
+            }
+
+            clientesRef.on('value', (snapshot) => {
+                snapshot.forEach(childSnapshot => {
+                    const cliente = childSnapshot.val();
+                    const nombres = cliente.nombres.toLowerCase();
+                    const cedula = cliente.cedula.toLowerCase();
+
+                    if (nombres.includes(searchTerm) || cedula.includes(searchTerm)) {
+                        const clientDiv = document.createElement('li');
+                        clientDiv.className = 'client';
+                        clientDiv.innerHTML = `
+                            <div class="details">
+                                <p><strong>${cliente.nombres}</strong></p>
+                                <p>Cédula: ${cliente.cedula}</p>
+                            </div>
+                        `;
+                        clientDiv.addEventListener('click', () => selectClient(cliente));
+                        clientList.appendChild(clientDiv);
+                    }
+                });
+            });
+        });
+
+function selectClient(cliente) {
+    selectedClient = cliente;
+    selectedClientDiv.style.display = 'block';
+
+    const clientTable = document.createElement('table');
+    clientTable.innerHTML = `
+        <thead>
+            <tr>
+                <th colspan="2">Detalles del Cliente</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Nombres:</strong></td>
+                <td>${cliente.nombres}</td>
+            </tr>
+            <tr>
+                <td><strong>Cédula:</strong></td>
+                <td>${cliente.cedula}</td>
+            </tr>
+            <tr>
+                <td><strong>Dirección:</strong></td>
+                <td>${cliente.direccion || '-'}</td>
+            </tr>
+            <tr>
+                <td><strong>Teléfono:</strong></td>
+                <td>${cliente.telefono || '-'}</td>
+            </tr>
+        </tbody>
+    `;
+    clientDetails.innerHTML = '';
+    clientDetails.appendChild(clientTable);
+
+    // Limpiar la lista de productos y la tabla de nota de venta
+    productList.innerHTML = '';
+    notaItems.innerHTML = '';
+    totalAmount.textContent = '$0.00';
+    total = 0;
+
+    notaTable.style.display = 'table';
+}
+
+function addToNota(producto) {
+    const cantidad = 1; // Valor por defecto
+    const precioUnitario = parseFloat(producto.precio);
+
+    // Calcular el total por producto
+    const totalProducto = cantidad * precioUnitario;
+
+    // Actualizar el total general
+    total += totalProducto;
+    totalAmount.textContent = `$${total.toFixed(2)}`;
+
+    // Crear la fila para el producto en la tabla de la nota de venta
+    const filaProducto = document.createElement('tr');
+    filaProducto.innerHTML = `
+        <td>${producto.codigo}</td>
+        <td>${producto.nombre}</td>
+        <td><input type="number" value="${cantidad}" min="1" onchange="actualizarCantidad(this)"></td>
+        <td>$${precioUnitario.toFixed(2)}</td>
+        <td>$${totalProducto.toFixed(2)}</td>
+        <td><button onclick="eliminarProducto(this)" class="eliminar-btn">Eliminar</button></td>
+    `;
+    notaItems.appendChild(filaProducto);
+}
+
+function eliminarProducto(btnEliminar) {
+    const fila = btnEliminar.closest('tr');
+    const totalProducto = parseFloat(fila.children[4].textContent.slice(1)); // Obtener el total del producto eliminado
+    total -= totalProducto;
+    totalAmount.textContent = `$${total.toFixed(2)}`;
+    fila.remove();
+}
+
+function actualizarCantidad(inputCantidad) {
+    const fila = inputCantidad.closest('tr');
+    const precioUnitario = parseFloat(fila.children[3].textContent.slice(1)); // Obtener el precio unitario del producto
+    let cantidad = parseInt(inputCantidad.value, 10); // Obtener la cantidad nueva
+    cantidad = isNaN(cantidad) || cantidad < 1 ? 1 : cantidad; // Asegurar que la cantidad sea válida y al menos 1
+
+    // Actualizar el total del producto
+    const totalProducto = cantidad * precioUnitario;
+    fila.children[4].textContent = `$${totalProducto.toFixed(2)}`;
+
+    // Recalcular el total general
+    total = 0;
+    const filasProductos = document.querySelectorAll('#nota-items tr');
+    filasProductos.forEach(fila => {
+        const totalProducto = parseFloat(fila.children[4].textContent.slice(1));
+        total += totalProducto;
+    });
+    totalAmount.textContent = `$${total.toFixed(2)}`;
+}
+
+function printNota() {
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write('<html><head><title>Nota de Venta MATIZ</title>');
+    printWindow.document.write('<style>@media print { body { padding: 20px; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; } th { background-color: #f2f2f2; } .total { text-align: right; } .total span { font-size: 20px; color: #27ae60; } .eliminar-btn { display: none; } }</style>'); // Estilo para ocultar los botones de eliminar en la impresión
+    printWindow.document.write('</head><body>');
+
+    printWindow.document.write('<h1 style="text-align: center;">Nota de Venta MATIZ</h1>');
+
+    // Agregar los detalles del cliente
+    const clientDetails = document.getElementById('client-details').innerHTML;
+    printWindow.document.write('<h2>Detalles del Cliente:</h2>');
+    printWindow.document.write(clientDetails);
+
+    // Agregar la tabla de productos seleccionados
+    const notaItems = document.getElementById('nota-items').cloneNode(true); // Clonar para manipular sin afectar la original
+    const cantidadInputs = notaItems.querySelectorAll('input[type="number"]');
+    cantidadInputs.forEach(input => {
+        input.parentNode.textContent = input.value; // Reemplazar input por solo el número de cantidad
+    });
+
+    printWindow.document.write('<h2>Productos:</h2>');
+    printWindow.document.write('<table>');
+    printWindow.document.write('<thead><tr><th>Código del Producto</th><th>Producto</th><th>Cantidad</th><th>Precio Unitario</th><th>Total</th></tr></thead>');
+    printWindow.document.write('<tbody>');
+    printWindow.document.write(notaItems.innerHTML);
+    printWindow.document.write('</tbody></table>');
+
+    // Agregar el total
+    const totalAmount = document.getElementById('total-amount').innerHTML;
+    printWindow.document.write('<div class="total">');
+    printWindow.document.write('<h2>Total a Pagar:</h2>');
+    printWindow.document.write(totalAmount);
+    printWindow.document.write('</div>');
+
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.print();
+}
+
+</script>
+</body>
+</html>
