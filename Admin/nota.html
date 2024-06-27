@@ -151,6 +151,12 @@
                 <h3>Cliente Seleccionado:</h3>
                 <p id="client-details"></p>
             </div>
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Buscar productos...">
+        </div>
+        <ul class="product-list" id="product-list">
+            <!-- Los productos buscados aparecerán aquí -->
+        </ul>
             <table id="nota-table" style="display: none;">
                 <thead>
                     <tr>
@@ -171,13 +177,7 @@
             </div>
             <button class="print-btn" onclick="printNota()">Imprimir Comprobante</button>
         </div>
-        
-        <div class="search-bar">
-            <input type="text" id="search" placeholder="Buscar productos...">
-        </div>
-        <ul class="product-list" id="product-list">
-            <!-- Los productos buscados aparecerán aquí -->
-        </ul>
+
     </div>
 
     <script>
@@ -212,66 +212,74 @@
         let total = 0;
         let selectedClient = null;
 
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            productList.innerHTML = '';
+searchInput.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    productList.innerHTML = '';
 
-            if (searchTerm === '') {
-                return; // No mostrar productos si no hay búsqueda
-            }
+    if (searchTerm === '') {
+        return; // No mostrar productos si no hay búsqueda
+    }
 
-            productosRef.on('value', (snapshot) => {
-                snapshot.forEach(childSnapshot => {
-                    const producto = childSnapshot.val();
-                    const nombre = producto.nombre.toLowerCase();
-                    const codigo = producto.codigo.toLowerCase();
+    productosRef.on('value', (snapshot) => {
+        snapshot.forEach(childSnapshot => {
+            const producto = childSnapshot.val();
+            const nombre = producto.nombre.toLowerCase();
+            const codigo = producto.codigo.toLowerCase();
 
-                    if (nombre.includes(searchTerm) || codigo.includes(searchTerm)) {
-                        const productDiv = document.createElement('li');
-                        productDiv.className = 'product';
-                        productDiv.innerHTML = `
-                            <img src="${producto.imagen}" alt="${producto.nombre}">
-                            <div class="details">
-                                <h3>${producto.nombre}</h3>
-                                <p class="price">$${producto.precio}</p>
-                            </div>
-                        `;
-                        productDiv.addEventListener('click', () => addToNota(producto));
-                        productList.appendChild(productDiv);
-                    }
+            if (nombre.includes(searchTerm) || codigo.includes(searchTerm)) {
+                const productDiv = document.createElement('li');
+                productDiv.className = 'product';
+                productDiv.innerHTML = `
+                    <img src="${producto.imagen}" alt="${producto.nombre}">
+                    <div class="details">
+                        <h3>${producto.nombre}</h3>
+                        <p class="price">$${producto.precio}</p>
+                    </div>
+                `;
+                productDiv.addEventListener('click', () => {
+                    addToNota(producto);
+                    searchInput.value = ''; // Limpiar el campo de búsqueda al seleccionar un producto
+                    productList.innerHTML = ''; // Limpiar la lista de productos después de seleccionar uno
                 });
-            });
-        });
-
-        searchClientInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            clientList.innerHTML = '';
-
-            if (searchTerm === '') {
-                return; // No mostrar clientes si no hay búsqueda
+                productList.appendChild(productDiv);
             }
-
-            clientesRef.on('value', (snapshot) => {
-                snapshot.forEach(childSnapshot => {
-                    const cliente = childSnapshot.val();
-                    const nombres = cliente.nombres.toLowerCase();
-                    const cedula = cliente.cedula.toLowerCase();
-
-                    if (nombres.includes(searchTerm) || cedula.includes(searchTerm)) {
-                        const clientDiv = document.createElement('li');
-                        clientDiv.className = 'client';
-                        clientDiv.innerHTML = `
-                            <div class="details">
-                                <p><strong>${cliente.nombres}</strong></p>
-                                <p>Cédula: ${cliente.cedula}</p>
-                            </div>
-                        `;
-                        clientDiv.addEventListener('click', () => selectClient(cliente));
-                        clientList.appendChild(clientDiv);
-                    }
-                });
-            });
         });
+    });
+});
+
+searchClientInput.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    clientList.innerHTML = '';
+
+    if (searchTerm === '') {
+        return; // No mostrar clientes si no hay búsqueda
+    }
+
+    clientesRef.on('value', (snapshot) => {
+        snapshot.forEach(childSnapshot => {
+            const cliente = childSnapshot.val();
+            const nombres = cliente.nombres.toLowerCase();
+            const cedula = cliente.cedula.toLowerCase();
+
+            if (nombres.includes(searchTerm) || cedula.includes(searchTerm)) {
+                const clientDiv = document.createElement('li');
+                clientDiv.className = 'client';
+                clientDiv.innerHTML = `
+                    <div class="details">
+                        <p><strong>${cliente.nombres}</strong></p>
+                        <p>Cédula: ${cliente.cedula}</p>
+                    </div>
+                `;
+                clientDiv.addEventListener('click', () => {
+                    selectClient(cliente);
+                    searchClientInput.value = ''; // Limpiar el campo de búsqueda al seleccionar un cliente
+                    clientList.innerHTML = ''; // Limpiar la lista de clientes después de seleccionar uno
+                });
+                clientList.appendChild(clientDiv);
+            }
+        });
+    });
+});
 
 function selectClient(cliente) {
     selectedClient = cliente;
